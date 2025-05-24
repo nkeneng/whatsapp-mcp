@@ -391,45 +391,56 @@ def list_chats(
 
 
 def search_contacts(query: str) -> List[Contact]:
-    """Search contacts by name or phone number."""
+    """Search contacts by name or phone number across two databases."""
     try:
-        conn = sqlite3.connect(MESSAGES_DB_PATH)
-        cursor = conn.cursor()
-        
-        # Split query into characters to support partial matching
-        search_pattern = '%' +query + '%'
-        
-        cursor.execute("""
-            SELECT DISTINCT 
-                jid,
-                name
-            FROM chats
-            WHERE 
-                (LOWER(name) LIKE LOWER(?) OR LOWER(jid) LIKE LOWER(?))
-                AND jid NOT LIKE '%@g.us'
-            ORDER BY name, jid
-            LIMIT 50
-        """, (search_pattern, search_pattern))
-        
-        contacts = cursor.fetchall()
-        
-        result = []
-        for contact_data in contacts:
-            contact = Contact(
-                phone_number=contact_data[0].split('@')[0],
-                name=contact_data[1],
-                jid=contact_data[0]
+        # Primary chats DB
+        conn1 = sqlite3.connect(MESSAGES_DB_PATH)
+        cursor1 = conn1.cursor()
+        search_pattern = f"%{query}%"
+        cursor1.execute(
+            "SELECT DISTINCT jid, name FROM chats "
+            "WHERE (LOWER(name) LIKE LOWER(?) OR LOWER(jid) LIKE LOWER(?)) "
+            "AND jid NOT LIKE '%@g.us' "
+            "ORDER BY name, jid LIMIT 50",
+            (search_pattern, search_pattern)
+        )
+        contacts1 = cursor1.fetchall()
+
+        # Only query secondary DB if no results from primary
+        contacts2 = []
+        if not contacts1:
+            # Secondary whatsmeow_contacts DB
+            other_db = os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                '..', 'whatsapp-bridge', 'store', 'whatsapp.db'
             )
-            result.append(contact)
-            
+            conn2 = sqlite3.connect(other_db)
+            cursor2 = conn2.cursor()
+            cursor2.execute(
+                "SELECT their_jid, COALESCE(full_name, push_name, first_name, '') AS name "
+                "FROM whatsmeow_contacts "
+                "WHERE (LOWER(first_name) LIKE LOWER(?) OR LOWER(full_name) LIKE LOWER(?) "
+                "OR LOWER(push_name) LIKE LOWER(?) OR LOWER(their_jid) LIKE LOWER(?)) "
+                "LIMIT 50",
+                (search_pattern, search_pattern, search_pattern, search_pattern)
+            )
+            contacts2 = cursor2.fetchall()
+
+        # Convert results to Contact objects
+        result = []
+        for jid, name in contacts1 + contacts2:
+            result.append(Contact(
+                phone_number=jid.split('@')[0],
+                name=name,
+                jid=jid
+            ))
         return result
-        
     except sqlite3.Error as e:
         print(f"Database error: {e}")
         return []
     finally:
-        if 'conn' in locals():
-            conn.close()
+        if 'conn1' in locals(): conn1.close()
+        if 'conn2' in locals(): conn2.close()
 
 
 def get_contact_chats(jid: str, limit: int = 20, page: int = 0) -> List[Chat]:

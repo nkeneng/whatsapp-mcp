@@ -1,0 +1,91 @@
+openapi: "3.0.0"
+info:
+  title: WhatsApp Bridge API
+  version: "1.0.0"
+servers:
+  - url: http://localhost:8080
+paths:
+  /api/send:
+    post:
+      summary: Send a text or media message
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendMessageRequest'
+      responses:
+        '200':
+          description: message send result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendMessageResponse'
+        '4XX':
+          description: invalid request
+        '5XX':
+          description: server error
+  /api/download:
+    post:
+      summary: Download media by message ID and chat JID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DownloadMediaRequest'
+      responses:
+        '200':
+          description: media download result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DownloadMediaResponse'
+        '4XX':
+          description: invalid request
+        '5XX':
+          description: server error
+components:
+  schemas:
+    SendMessageRequest:
+      type: object
+      required:
+        - recipient
+      properties:
+        recipient:
+          type: string
+          description: JID or phone number
+        message:
+          type: string
+          description: text content to send
+        media_path:
+          type: string
+          description: optional local file path to media
+    SendMessageResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+    DownloadMediaRequest:
+      type: object
+      required:
+        - message_id
+        - chat_jid
+      properties:
+        message_id:
+          type: string
+        chat_jid:
+          type: string
+    DownloadMediaResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        filename:
+          type: string
+        path:
+          type: string
