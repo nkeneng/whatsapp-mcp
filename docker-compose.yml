@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  whatsapp-mcp:
+    build: .
+    ports:
+      - "8080:8080"  # WhatsApp bridge API
+      - "8000:8000"  # MCP server API
+    volumes:
+      - ./data:/app/whatsapp-bridge/store  # Persist database files
+      - ./media:/app/media  # Media downloads/uploads
+    environment:
+      - WHATSAPP_API_BASE_URL=http://localhost:8080/api
+      - MESSAGES_DB_PATH=/app/whatsapp-bridge/store/messages.db
+    restart: unless-stopped
+    networks:
+      - whatsapp-network
+
+networks:
+  whatsapp-network:
+    driver: bridge
+
+volumes:
+  whatsapp-data:
+    driver: local
