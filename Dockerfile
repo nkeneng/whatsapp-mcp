@@ -1,3 +1,5 @@
+# Multi-stage build for Go and Python applications
+
 # Stage 1: Python application with UV
 FROM python:3.11-slim AS python-base
 # Install UV
@@ -8,11 +10,25 @@ RUN uv sync
 
 # Stage 2: Final runtime image
 FROM python:3.11-slim
-# Install Go runtime and ffmpeg for audio conversion
+# Install Go 1.23, build tools for CGO, and ffmpeg for audio conversion
 RUN apt-get update && apt-get install -y \
-    golang-go \
+    wget \
     ffmpeg \
+    gcc \
+    libc6-dev \
+    pkg-config \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Go 1.23 manually
+RUN wget -O go.tar.gz https://go.dev/dl/go1.23.4.linux-amd64.tar.gz \
+    && tar -C /usr/local -xzf go.tar.gz \
+    && rm go.tar.gz
+
+# Add Go to PATH and enable CGO
+ENV PATH=/usr/local/go/bin:$PATH
+ENV GOPATH=/go
+ENV GOBIN=/go/bin
+ENV CGO_ENABLED=1
 
 # Install UV in final image
 RUN pip install uv

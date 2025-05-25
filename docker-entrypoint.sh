@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Start WhatsApp bridge in background
+# Start WhatsApp bridge in background with CGO enabled
 cd /app/whatsapp-bridge
 echo "Starting WhatsApp Bridge..."
-go run main.go &
+CGO_ENABLED=1 go run main.go &
 BRIDGE_PID=$!
 
 # Wait a moment for the bridge to start
