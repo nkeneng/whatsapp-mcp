@@ -15,6 +15,10 @@ echo "Starting MCP Server..."
 uv run api.py &
 MCP_PID=$!
 
+echo "Starting main.py..."
+uv run main.py &
+MAIN_PID=$!
+
 # Function to handle shutdown
 shutdown() {
     echo "Shutting down services..."
