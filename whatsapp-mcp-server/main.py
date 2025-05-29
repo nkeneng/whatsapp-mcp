@@ -1,5 +1,5 @@
 from typing import List, Dict, Any, Optional
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 from whatsapp import (
     search_contacts as whatsapp_search_contacts,
     list_messages as whatsapp_list_messages,
@@ -16,7 +16,9 @@ from whatsapp import (
 )
 
 # Initialize FastMCP server
-mcp = FastMCP("whatsapp")
+mcp = FastMCP(
+    name = "whatsapp",
+    )
 
 @mcp.tool()
 def search_contacts(query: str) -> List[Dict[str, Any]]:
@@ -247,5 +249,11 @@ def download_media(message_id: str, chat_jid: str) -> Dict[str, Any]:
         }
 
 if __name__ == "__main__":
-    # Initialize and run the server
-    mcp.run(transport='stdio')
+    mcp.run(
+        transport="streamable-http",
+        host="127.0.0.1",
+        port=4200,
+        path="/mcp",
+        log_level="debug"
+    )
+    # mcp.run(transport='stdio')
