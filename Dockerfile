@@ -50,7 +50,7 @@ ENV PYTHONPATH=/app/whatsapp-mcp-server
 ENV WHATSAPP_BRIDGE_PATH=/app/whatsapp-bridge
 
 # Expose ports
-EXPOSE 8080 8000
+EXPOSE 8080 8000 4200
 
 # Create startup script
 COPY docker-entrypoint.sh /app/
