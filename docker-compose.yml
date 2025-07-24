@@ -1,20 +1,56 @@
 version: '3.8'
 
 services:
-  whatsapp-mcp:
-    build: .
-    ports:
-      - "8080:8080"  # WhatsApp bridge API
-      - "8000:8000"  # MCP server API
+  # WhatsApp Bridge Service (Go)
+  whatsapp-bridge:
+    build:
+      context: .
+      dockerfile: ./Dockerfiles/bridge
     volumes:
-      - ./data:/app/whatsapp-bridge/store  # Persist database files
-      - ./media:/app/media  # Media downloads/uploads
+      - ./data/store:/app/store
+      - ./data/media:/app/media
     environment:
-      - WHATSAPP_API_BASE_URL=http://localhost:8080/api
-      - MESSAGES_DB_PATH=/app/whatsapp-bridge/store/messages.db
-    restart: unless-stopped
+      - CGO_ENABLED=1
     networks:
       - whatsapp-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # MCP Server (Python)
+  mcp-server:
+    build:
+      context: .
+      dockerfile: ./Dockerfiles/mcp
+    environment:
+      - WHATSAPP_API_BASE_URL=http://whatsapp-bridge:8080/api
+      - MESSAGES_DB_PATH=/app/data/store/messages.db
+    volumes:
+      - ./data:/app/data
+    networks:
+      - whatsapp-network
+    depends_on:
+      whatsapp-bridge:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # API Server (Python)
+  api-server:
+    build:
+      context: .
+      dockerfile: ./Dockerfiles/api
+    environment:
+      - WHATSAPP_API_BASE_URL=http://whatsapp-bridge:8080/api
+      - API_KEY=${API_KEY:-mysecretkey}
+    networks:
+      - whatsapp-network
+    depends_on:
+      whatsapp-bridge:
+        condition: service_healthy
+    restart: unless-stopped
 
 networks:
   whatsapp-network:

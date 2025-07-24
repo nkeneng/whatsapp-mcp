@@ -20,7 +20,7 @@ app = FastAPI(
 
 # Dynamically load MCP server module
 server_path = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "whatsapp-mcp-server", "main.py")
+    os.path.join(os.path.dirname(__file__), "main.py")
 )
 spec = importlib.util.spec_from_file_location("server_main", server_path)
 server_main = importlib.util.module_from_spec(spec)

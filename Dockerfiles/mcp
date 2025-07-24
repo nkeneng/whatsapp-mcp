@@ -1,0 +1,28 @@
+# Dockerfile pour MCP Server (Python)
+FROM python:3.11-slim
+
+# Install ffmpeg for audio conversion
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install UV
+RUN pip install uv
+
+WORKDIR /app
+COPY whatsapp-mcp-server/ .
+
+# Install dependencies
+RUN uv sync
+
+# Create directories
+RUN mkdir -p /app/data /app/media
+
+EXPOSE 4200
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:4200/health || exit 1
+
+CMD ["uv", "run", "main.py"]
